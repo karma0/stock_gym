@@ -41,7 +41,7 @@ class MarketMixin:
         return self.data[self.data_idx - 1]
 
     def reset_idx(self):
-        self.data_idx = np.random.randint(0, self.max_idx)
+        self.data_idx = np.random.randint(self.max_idx + 1)
 
     def _generate_data(self):
         return self.np_random.uniform(-self.max_steps, self.max_steps)
