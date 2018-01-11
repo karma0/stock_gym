@@ -33,11 +33,15 @@ class MarketMixin:
     def add_data(self, data=None):
         """Add data to backend"""
         self.data = data if data is not None else self._generate_data()
+        self.max_idx = len(self.data) - self.max_steps
 
     def next_data(self):
         """Grab next piece of data, update index"""
         self.data_idx += 1
         return self.data[self.data_idx - 1]
+
+    def reset_idx(self):
+        self.data_idx = np.random.randint(0, self.max_idx)
 
     def _generate_data(self):
         return self.np_random.uniform(-self.max_steps, self.max_steps)
