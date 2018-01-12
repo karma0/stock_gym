@@ -34,6 +34,12 @@ class IMarketEnv(gym.Env, MarketMixin):
     np_random = None
     long_start = None
 
+    # Fields index
+    fidx = {
+        "volume": -1,
+        "close": -2,
+    }
+
     def __init__(self):
         self.action_space = spaces.Discrete(1)
         self.observation_space = spaces.Tuple((
