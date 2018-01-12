@@ -1,13 +1,12 @@
-This file requires editing
+Stock Gym
 ==========================
 
-Note to the author: Please add something informative to this README *before*
-releasing your software, as `a little documentation goes a long way`_.  Both
-README.rst (this file) and NEWS.txt (release notes) will be included in your
-package metadata which gets displayed in the PyPI page for your project.
+This is a stock market `gym` environment for testing/validating stock market
+algorithms.
 
-You can take a look at the README.txt of other projects, such as repoze.bfg
-(http://bfg.repoze.org/trac/browser/trunk/README.txt) for some ideas.
+To install, run `pip install stock_gym`, and to use, `from stock_gym.envs.stocks import make` and run `env = make('MarketEnv-v0').unwrapped`.
+
+For more information, please see the [OpenAI Gym](https://github.com/openai/gym/).
 
 .. _`a little documentation goes a long way`: http://www.martinaspeli.net/articles/a-little-documentation-goes-a-long-way
 

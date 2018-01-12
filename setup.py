@@ -22,9 +22,9 @@ setup(name='stock_gym',
     classifiers=[
       # Get strings from http://pypi.python.org/pypi?%3Aaction=list_classifiers
     ],
-    keywords='openai-gym-environments',
-    author='openai-gym',
-    author_email='openaikarma0@gmail.com',
+    keywords='openai-gym-environments,openai-gym,openai',
+    author='Bobby',
+    author_email='karma0@gmail.com',
     url='https://github.com/karma0/stock_gym.git',
     license='MIT',
     packages=find_packages('src'),
