@@ -11,7 +11,7 @@ version = '0.1c'
 
 setup(
     name='stock_gym',
-    packages=find_packages(),
+    packages=['stock_gym', 'stock_gym.envs', 'stock_gym.envs.stocks'],
     version=version,
     description="An OpenAI Gym environment for stock market data",
     long_description=README + '\n\n' + NEWS,
