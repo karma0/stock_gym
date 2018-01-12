@@ -99,3 +99,14 @@ ENV/
 
 # mypy
 .mypy_cache/
+*.pyc
+
+.installed.cfg
+bin
+develop-eggs
+
+*.egg-info
+
+tmp
+build
+dist
