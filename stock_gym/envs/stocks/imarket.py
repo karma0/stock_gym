@@ -5,8 +5,8 @@ from gym import spaces
 from gym.utils import seeding
 import numpy as np
 
-from envs.stocks.actions import ExchangeAction
-from envs.stocks.mixins import MarketMixin
+from stock_gym.envs.stocks.actions import ExchangeAction
+from stock_gym.envs.stocks.mixins import MarketMixin
 
 
 class IMarketEnv(gym.Env, MarketMixin):

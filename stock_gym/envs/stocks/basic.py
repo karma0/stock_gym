@@ -1,6 +1,6 @@
 """Environment for trading"""
 
-from envs.stocks.imarket import IMarketEnv
+from stock_gym.envs.stocks.imarket import IMarketEnv
 
 
 class MarketEnv(IMarketEnv):
