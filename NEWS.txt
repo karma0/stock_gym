@@ -1,6 +1,13 @@
 News
 ====
 
+0.1a
+-----
+
+*Release date: 12-Jan-2018*
+
+* Updated documentation
+
 0.1
 -----
 
