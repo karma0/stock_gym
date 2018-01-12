@@ -8,10 +8,6 @@ NEWS = open(os.path.join(here, 'NEWS.txt')).read()
 
 version = '0.1c'
 
-dependency_links = [
-    'https://github.com/openai/gym'
-]
-
 
 setup(
     name='stock_gym',
@@ -25,4 +21,5 @@ setup(
     author_email='karma0@gmail.com',
     url='https://github.com/karma0/stock_gym',
     license='MIT',
+    install_requires=['gym'],
 )
