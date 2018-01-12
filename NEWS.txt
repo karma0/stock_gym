@@ -1,12 +1,12 @@
 News
 ====
 
-0.1a, 0.1b
+0.1a, 0.1b, 0.1c
 -----
 
 *Release date: 12-Jan-2018*
 
-* Updated documentation
+* Updated documentation; fixed import
 
 0.1
 -----

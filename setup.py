@@ -6,7 +6,7 @@ README = open(os.path.join(here, 'README.rst')).read()
 NEWS = open(os.path.join(here, 'NEWS.txt')).read()
 
 
-version = '0.1b'
+version = '0.1c'
 
 dependency_links = [
     'https://github.com/openai/gym'
@@ -35,8 +35,5 @@ setup(name='stock_gym',
     package_dir = {'': 'src'},include_package_data=True,
     zip_safe=False,
     install_requires=install_requires,
-    entry_points={
-        'console_scripts':
-            ['stock_gym=stock_gym:main']
-    }
+    py_modules=['stock_gym']
 )
