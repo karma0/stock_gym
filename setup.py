@@ -11,7 +11,7 @@ version = '0.1c'
 
 setup(
     name='stock_gym',
-    packages=['stock_gym'],
+    packages=find_packages(),
     version=version,
     description="An OpenAI Gym environment for stock market data",
     long_description=README + '\n\n' + NEWS,
@@ -19,7 +19,7 @@ setup(
     keywords='openai-gym-environments openai-gym openai',
     author='Bobby',
     author_email='karma0@gmail.com',
-    url='https://github.com/karma0/stock_gym',
+    url='https://github.com/karma0/stock_gym.git',
     license='MIT',
     install_requires=['gym'],
 )
