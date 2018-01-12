@@ -76,8 +76,8 @@ class IMarketEnv(gym.Env, MarketMixin):
         done = self.total_steps > self.max_steps
 
         ohlcv = self.next_data()
-        self.rotate(self.state["closes"], ohlcv["close"])
-        self.rotate(self.state["volumes"], ohlcv["volume"])
+        self.rotate(self.state["closes"], ohlcv[self.fidx["close"]])
+        self.rotate(self.state["volumes"], ohlcv[self.fidx["volume"]])
         self.rotate(self.state["sma"], np.average(self.state["closes"]))
 
         return (
