@@ -1,6 +1,13 @@
 News
 ====
 
+0.2
+-----
+
+*Release date: 12-Jan-2018*
+
+* Fixed import bugs.
+
 0.1a, 0.1b, 0.1c, 0.1d
 -----
 
