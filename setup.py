@@ -31,9 +31,6 @@ setup(name='stock_gym',
     author_email='karma0@gmail.com',
     url='https://github.com/karma0/stock_gym.git',
     license='MIT',
-    packages=find_packages('src'),
-    package_dir = {'': 'src'},include_package_data=True,
-    zip_safe=False,
+    packages=['stock_gym'],
     install_requires=install_requires,
-    py_modules=['stock_gym']
 )
