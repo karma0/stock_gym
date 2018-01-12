@@ -6,7 +6,11 @@ README = open(os.path.join(here, 'README.rst')).read()
 NEWS = open(os.path.join(here, 'NEWS.txt')).read()
 
 
-version = '0.1a'
+version = '0.1b'
+
+dependency_links = [
+    'https://github.com/openai/gym'
+]
 
 install_requires = [
     # List your project dependencies here.
