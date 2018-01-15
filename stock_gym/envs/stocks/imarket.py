@@ -65,6 +65,7 @@ class IMarketEnv(gym.Env, MarketMixin):
         return self.action.reset()
 
     def _step(self, action):
+        reward = float()
         if self.action.changed(action):
             if self.action.long:  # opening up a long position
                 self.long_start = self.state["closes"][-1]
