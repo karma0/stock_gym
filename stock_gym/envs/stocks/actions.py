@@ -1,10 +1,15 @@
 """Environment for trading"""
 
+from collections import namedtuple
+
+
+State = namedtuple('State', 'long short stay')
+
 
 class ExchangeAction:
     """The actions of the market"""
-    long = False  # By default we're not long on a position
-    actions = [False, True]  # short, long
+    state = State(False, False, True)  # long, short, stay
+    actions = ["long", "short", "stay"]
 
     def __init__(self, action=None):
         self.reset(action)
@@ -13,11 +18,16 @@ class ExchangeAction:
         """Reset the action state"""
         if action is not None:
             assert action in self.actions
-            self.long = action
+            if action == "long":
+                self.state = State(True, False, False)
+            elif action == "long":
+                self.state = State(False, True, False)
+            else:
+                self.state = State(False, False, True)
         else:
-            self.long = False  # default back to short
-        return self.long
+            self.state = State(False, False, True)
+        return self.state
 
     def changed(self, action):
         """Test, returning True if state changed"""
-        return action is not self.long
+        return True if [a for a in self.actions if action == a] else False
