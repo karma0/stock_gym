@@ -13,7 +13,7 @@ class IMarketEnv(gym.Env, MarketMixin):
     """
     Base Market Environment Interface
 
-    Actions are long, True or False, which equates to buy or sell.
+    Actions are "buy", "stay", "sell".
 
     Observation space is a normalized percentage of change in either
     direction multiplied by 100 for precision in the hundredths.

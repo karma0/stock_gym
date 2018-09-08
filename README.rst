@@ -1,21 +1,41 @@
+=========
 Stock Gym
-==========================
+=========
 
-This is a stock market `gym` environment for testing/validating stock market
-algorithms.
 
-To install, run::
-    pip install stock_gym gym
+.. image:: https://img.shields.io/pypi/v/stock_gym.svg
+        :target: https://pypi.python.org/pypi/stock_gym
 
-and use::
-    from stock_gym.envs.stocks import make
+.. image:: https://img.shields.io/travis/karma0/stock_gym.svg
+        :target: https://travis-ci.org/karma0/stock_gym
 
-and run::
-    env = make('MarketEnv-v0').unwrapped
+.. image:: https://readthedocs.org/projects/stock-gym/badge/?version=latest
+        :target: https://stock-gym.readthedocs.io/en/latest/?badge=latest
+        :alt: Documentation Status
 
-For more information, please see the `OpenAI Gym <https://github.com/openai/gym/>`_.
+
+.. image:: https://pyup.io/repos/github/karma0/stock_gym/shield.svg
+     :target: https://pyup.io/repos/github/karma0/stock_gym/
+     :alt: Updates
+
+
+
+An OpenAI stock gym for OHCLV data.
+
+
+* Free software: MIT license
+* Documentation: https://stock-gym.readthedocs.io.
+
+
+Features
+--------
+
+* TODO
 
 Credits
 -------
 
-`Bobby <http://bobby.social>`_
+This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
+
+.. _Cookiecutter: https://github.com/audreyr/cookiecutter
+.. _`audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypackage
