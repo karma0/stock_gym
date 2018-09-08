@@ -23,7 +23,7 @@ class IMarketEnv(gym.Env, MarketMixin):
         (max(action, self.number) + self.range)
 
     Ideally an agent will be able to recognise the 'scent' of a higher reward
-    and increase the rate in which is guesses in that direction until the
+    and increase the rate in which it guesses in that direction until the
     reward reaches its maximum
     """
     max_steps = 10000
@@ -38,13 +38,23 @@ class IMarketEnv(gym.Env, MarketMixin):
     fidx = {
         "volume": -1,
         "close": -2,
+        "low": -3,
+        "high": -4,
+        "open": -5,
     }
 
     def __init__(self):
-        self.action_space = spaces.Discrete(1)
+        self.action_space = spaces.Discrete(3)
         self.observation_space = spaces.Tuple((
+            # OHLCV
+            self.create_discrete_hist(),  # open
+            self.create_discrete_hist(),  # high
+            self.create_discrete_hist(),  # low
             self.create_discrete_hist(),  # close
             self.create_discrete_hist(),  # volume
+
+            # indicators
+            # TODO: Add more indicators
             self.create_discrete_hist(),  # sma
         ))
 
@@ -55,6 +65,9 @@ class IMarketEnv(gym.Env, MarketMixin):
         return [seed]
 
     def _reset(self):
+        self.state["opens"] = np.zeros(self.hist_size)
+        self.state["highs"] = np.zeros(self.hist_size)
+        self.state["lows"] = np.zeros(self.hist_size)
         self.state["closes"] = np.zeros(self.hist_size)
         self.state["volumes"] = np.zeros(self.hist_size)
         self.state["sma"] = np.zeros(self.hist_size)
@@ -67,22 +80,25 @@ class IMarketEnv(gym.Env, MarketMixin):
     def _step(self, action):
         reward = float()
         if self.action.changed(action):
-            if self.action.long:  # opening up a long position
+            if self.action.state.long:  # opening up a long position
                 self.long_start = self.state["closes"][-1]
-            else:  # closing out of a long position
-                reward = self.long_start
+            if self.action.state.short:  # closing out of a long position
+                reward = self.long_start - self.state["closes"][-1]
                 self.long_start = None
             self.action.reset(action)
 
         done = self.total_steps > self.max_steps
 
         ohlcv = self.next_data()
+        self.rotate(self.state["opens"], ohlcv[self.fidx["open"]])
+        self.rotate(self.state["highs"], ohlcv[self.fidx["high"]])
+        self.rotate(self.state["lows"], ohlcv[self.fidx["low"]])
         self.rotate(self.state["closes"], ohlcv[self.fidx["close"]])
         self.rotate(self.state["volumes"], ohlcv[self.fidx["volume"]])
         self.rotate(self.state["sma"], np.average(self.state["closes"]))
 
         return (
-            self.action.long,
+            self.action.state,
             reward,
             done,
             self.state
