@@ -27,7 +27,7 @@ class IMarketEnv(gym.Env, MarketMixin):
     reward reaches its maximum
     """
     max_steps = 10000
-    hist_size = 25
+    observation_size = 25
 
     action = ExchangeAction()
     state = {}  # type: dict
@@ -43,7 +43,13 @@ class IMarketEnv(gym.Env, MarketMixin):
         "open": -5,
     }
 
-    def __init__(self):
+    def __init__(self, **kwargs):
+        # Setup configuration overrides
+        for kw in ['max_steps', 'observation_size']:
+            val = kwargs.pop(kw, None)
+            if val is not None:
+                setattr(self, kw, val)
+
         self.action_space = spaces.Discrete(3)
         self.observation_space = spaces.Tuple((
             # OHLCV
@@ -65,12 +71,12 @@ class IMarketEnv(gym.Env, MarketMixin):
         return [seed]
 
     def _reset(self):
-        self.state["opens"] = np.zeros(self.hist_size)
-        self.state["highs"] = np.zeros(self.hist_size)
-        self.state["lows"] = np.zeros(self.hist_size)
-        self.state["closes"] = np.zeros(self.hist_size)
-        self.state["volumes"] = np.zeros(self.hist_size)
-        self.state["sma"] = np.zeros(self.hist_size)
+        self.state["opens"] = np.zeros(self.observation_size)
+        self.state["highs"] = np.zeros(self.observation_size)
+        self.state["lows"] = np.zeros(self.observation_size)
+        self.state["closes"] = np.zeros(self.observation_size)
+        self.state["volumes"] = np.zeros(self.observation_size)
+        self.state["sma"] = np.zeros(self.observation_size)
 
         self.long_start = None
         self.total_steps = 0

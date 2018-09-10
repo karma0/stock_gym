@@ -26,8 +26,8 @@ class MarketMixin:
         return self.np_random.uniform(-self.max_steps, self.max_steps)
 
     def create_discrete_hist(self, size=None):
-        """Create a discrete space of size self.hist_size"""
-        local_size = size if size is not None else self.hist_size
+        """Create a discrete space of size self.observation_size"""
+        local_size = size if size is not None else self.observation_size
         return spaces.Discrete(local_size)
 
     def rotate(self, nparr, newitem):  # pylint: disable=no-self-use

@@ -45,7 +45,7 @@ setup(
     include_package_data=True,
     keywords='stock_gym stock-gym ohlc ohlcv openai-gym-environments openai-gym openai',
     name='stock_gym',
-    packages=find_packages(include=['stock_gym']),
+    packages=find_packages(),
     setup_requires=setup_requirements,
     test_suite='tests',
     tests_require=test_requirements,
