@@ -9,7 +9,70 @@ from stock_gym.envs.stocks.actions import ExchangeAction
 from stock_gym.envs.stocks.mixins import MarketMixin
 
 
-class IMarketEnv(gym.Env, MarketMixin):
+class ILinearMarketEnv(gym.Env):
+    max_observations = 128
+    observation_size = 64
+    total_space_size = 8192
+    fee = .001  # And/or penalty for inaction
+
+    metadata = {'render.modes': ['human']}
+
+    n_features = 1  # OHLCV == 5
+    n_actions = 3  # buy, sell, stay
+    money = 1  # Bank
+    position = 0  # Set to bid price at beginning
+    idx = -1  # index of the start of the last observation
+
+    def __init__(self):
+        self.observation_space = spaces.Box(
+            low=0,
+            high=self.total_space_size,
+            shape=(self.n_features, self.observation_size),
+        )
+        self.action_space = spaces.Discrete(self.n_actions)
+
+        self.seed()
+
+        self.data = self.gen_data()
+
+    def move_index(self):
+        self.idx += 1
+
+    def set_random_index(self):
+        self.idx = np.random.randint(
+            len(self.data) -
+            self.observation_size -
+            self.max_observations
+        )
+
+    def get_observation(self):
+        return self.data[self.idx:self.idx + self.observation_size]
+
+    def seed(self, seed=None):
+        self.np_random, seed = seeding.np_random(seed)
+        return [seed]
+
+    def step(self, action):
+        assert self.action_space.contains(action)
+        reward = self.fee
+        if action == "buy":
+            self.position = self.data[self.idx+self.observation_size]
+            reward -= -1 * (self.money - self.position)
+        elif action == "sell":
+            reward += self.data[self.idx+self.observation_size] - self.position
+            self.position = 0
+
+        self.money += reward
+        self.move_index()
+        return (self.get_observation(), reward, self.money <= 0, {})
+
+    def reset(self):
+        self.set_random_index()
+        self.data = self.gen_data()
+        return self.get_observation()
+
+
+class IOHLCVMarketEnv(gym.Env, MarketMixin):
     """
     Base Market Environment Interface
 
