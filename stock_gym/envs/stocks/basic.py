@@ -34,10 +34,10 @@ class FakeMarketEnv(ILinearMarketEnv):
         return old_price + old_price * chg
 
     def gen_data(self):
-        elements = np.array([self.start_price])
-        for a in np.range(self.total_space_size):
+        elements = [self.start_price]
+        for a in range(self.total_space_size):
             elements.append(self.gen_element(elements[-1]))
-        return elements
+        return np.array(elements)
 
 
 class OHLCVMarketEnv(IOHLCVMarketEnv):

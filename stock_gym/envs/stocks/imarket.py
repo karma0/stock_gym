@@ -17,11 +17,13 @@ class ILinearMarketEnv(gym.Env):
 
     metadata = {'render.modes': ['human']}
 
+    reward_multiplier = 10
     n_features = 1  # OHLCV == 5
     n_actions = 3  # buy, sell, stay
     money = 1  # Bank
     position = 0  # Set to bid price at beginning
     idx = -1  # index of the start of the last observation
+    observed = 0
 
     def __init__(self):
         self.observation_space = spaces.Box(
@@ -36,13 +38,19 @@ class ILinearMarketEnv(gym.Env):
         self.data = self.gen_data()
 
     def move_index(self):
+        if self.observed == self.max_observations:
+            return False
+        self.observed += 1
         self.idx += 1
+        return True
 
     def set_random_index(self):
+        self.observed = 0
         self.idx = np.random.randint(
             len(self.data) -
             self.observation_size -
-            self.max_observations
+            self.max_observations -
+            1
         )
 
     def get_observation(self):
@@ -63,8 +71,16 @@ class ILinearMarketEnv(gym.Env):
             self.position = 0
 
         self.money += reward
-        self.move_index()
-        return (self.get_observation(), reward, self.money <= 0, {})
+        if not self.move_index():
+            self.money = 0
+            reward -= 10
+
+        return (
+            self.get_observation(),
+            reward * self.reward_multiplier,
+            self.money <= 0,
+            {}
+        )
 
     def reset(self):
         self.set_random_index()
