@@ -10,11 +10,6 @@ from stock_gym.envs.stocks.imarket import IMarketEnv
 
 
 register(
-    id='OHLCVMarketEnv-v0',
-    entry_point='stock_gym.envs.stocks:OHLCVMarketEnv',
-    )
-
-register(
     id='SinMarketEnv-v0',
     entry_point='stock_gym.envs.stocks:SinMarketEnv',
     )
@@ -27,4 +22,14 @@ register(
 register(
     id='NegLinMarketEnv-v0',
     entry_point='stock_gym.envs.stocks:NegLinMarketEnv',
+    )
+
+register(
+    id='FakeMarketEnv-v0',
+    entry_point='stock_gym.envs.stocks:FakeMarketEnv',
+    )
+
+register(
+    id='OHLCVMarketEnv-v0',
+    entry_point='stock_gym.envs.stocks:OHLCVMarketEnv',
     )
