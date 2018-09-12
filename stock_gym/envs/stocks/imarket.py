@@ -2,89 +2,63 @@
 
 import gym
 from gym import spaces
-from gym.utils import seeding
 import numpy as np
 
 from stock_gym.envs.stocks.actions import ExchangeAction
 from stock_gym.envs.stocks.mixins import MarketMixin
 
 
-class ILinearMarketEnv(gym.Env):
-    max_observations = 128
-    observation_size = 64
-    total_space_size = 8192
-    fee = .001  # And/or penalty for inaction
-
-    metadata = {'render.modes': ['human']}
-
-    reward_multiplier = 10
-    n_features = 1  # OHLCV == 5
+class ILinearMarketEnv(gym.Env, MarketMixin):
+    n_features = 1  # OHLCV == 5, linear values == 1
     n_actions = 3  # buy, sell, stay
-    money = 1  # Bank
-    position = 0  # Set to bid price at beginning
-    idx = -1  # index of the start of the last observation
-    observed = 0
 
     def __init__(self):
-        self.observation_space = spaces.Box(
-            low=0,
-            high=self.total_space_size,
-            shape=(self.n_features, self.observation_size),
-        )
-        self.action_space = spaces.Discrete(self.n_actions)
-
+        self.observation_space = self.create_box_hist()
+        self.action_space = self.create_discrete_actions()
         self.seed()
-
-        self.data = self.gen_data()
-
-    def move_index(self):
-        if self.observed == self.max_observations:
-            return False
-        self.observed += 1
-        self.idx += 1
-        return True
-
-    def set_random_index(self):
-        self.observed = 0
-        self.idx = np.random.randint(
-            len(self.data) -
-            self.observation_size -
-            self.max_observations -
-            1
-        )
-
-    def get_observation(self):
-        return self.data[self.idx:self.idx + self.observation_size]
-
-    def seed(self, seed=None):
-        self.np_random, seed = seeding.np_random(seed)
-        return [seed]
+        self.add_data()
+        self.reset()
 
     def step(self, action):
-        assert self.action_space.contains(action)
+        assert action >= 0 and action < self.n_actions, \
+                f"Invalid Action: {action} of type: {type(action)}"
+
+        # calculate price, reward, position, and bank (money)
+        price = self.data[self.idx + self.observation_size - 1]
         reward = self.fee
-        if action == "buy":
-            self.position = self.data[self.idx+self.observation_size]
-            reward -= -1 * (self.money - self.position)
-        elif action == "sell":
-            reward += self.data[self.idx+self.observation_size] - self.position
+        if action == 0:  # buy
+            if self.money <= 0:  # Can't buy if you have no money
+                reward -= 1000
+            else:
+                reward -= price
+            self.position += price
+            self.money += reward
+        elif action == 1:  # sell
+            if self.position <= 0:  # Can't sell if you aren't vested
+                returns = -1000
+            else:
+                returns = price - self.position
+            reward += self.position + returns
+            self.money += reward
+            reward *= self.reward_multiplier
             self.position = 0
 
-        self.money += reward
-        if not self.move_index():
-            self.money = 0
-            reward -= 10
+        # End if we're out of money
+        done = self.money <= 0
+
+        # Prep index for next observation or end run if we're out of time
+        if not self._move_index():
+            done = True
 
         return (
             self.get_observation(),
-            reward * self.reward_multiplier,
-            self.money <= 0,
+            reward,  #* self.reward_multiplier,
+            done,
             {}
         )
 
     def reset(self):
         self.set_random_index()
-        self.data = self.gen_data()
         return self.get_observation()
 
 
@@ -105,8 +79,8 @@ class IOHLCVMarketEnv(gym.Env, MarketMixin):
     and increase the rate in which it guesses in that direction until the
     reward reaches its maximum
     """
-    max_steps = 10000
-    observation_size = 25
+    n_features = 5  # OHLCV
+    n_actions = 3  # buy, sell, stay
 
     action = ExchangeAction()
     state = {}  # type: dict
@@ -122,34 +96,7 @@ class IOHLCVMarketEnv(gym.Env, MarketMixin):
         "open": -5,
     }
 
-    def __init__(self, **kwargs):
-        # Setup configuration overrides
-        for kw in ['max_steps', 'observation_size']:
-            val = kwargs.pop(kw, None)
-            if val is not None:
-                setattr(self, kw, val)
-
-        self.action_space = spaces.Discrete(3)
-        self.observation_space = spaces.Tuple((
-            # OHLCV
-            self.create_discrete_hist(),  # open
-            self.create_discrete_hist(),  # high
-            self.create_discrete_hist(),  # low
-            self.create_discrete_hist(),  # close
-            self.create_discrete_hist(),  # volume
-
-            # indicators
-            # TODO: Add more indicators
-            self.create_discrete_hist(),  # sma
-        ))
-
-        self._reset()
-
-    def _seed(self, seed=None):
-        self.np_random, seed = seeding.np_random(seed)
-        return [seed]
-
-    def _reset(self):
+    def reset(self):
         self.state["opens"] = np.zeros(self.observation_size)
         self.state["highs"] = np.zeros(self.observation_size)
         self.state["lows"] = np.zeros(self.observation_size)
@@ -162,7 +109,7 @@ class IOHLCVMarketEnv(gym.Env, MarketMixin):
 
         return self.action.reset()
 
-    def _step(self, action):
+    def step(self, action):
         reward = float()
         if self.action.changed(action):
             if self.action.state.long:  # opening up a long position
@@ -172,7 +119,7 @@ class IOHLCVMarketEnv(gym.Env, MarketMixin):
                 self.long_start = None
             self.action.reset(action)
 
-        done = self.total_steps > self.max_steps
+        done = self.total_steps > self.total_space_size
 
         ohlcv = self.next_data()
         self.rotate(self.state["opens"], ohlcv[self.fidx["open"]])
