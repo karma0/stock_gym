@@ -9,9 +9,6 @@ from stock_gym.envs.stocks.mixins import MarketMixin
 
 
 class ILinearMarketEnv(gym.Env, MarketMixin):
-    n_features = 1  # OHLCV == 5, linear values == 1
-    n_actions = 3  # buy, sell, stay
-
     def step(self, action):
         assert action >= 0 and action < self.n_actions, \
                 f"Invalid Action: {action} of type: {type(action)}"
@@ -73,8 +70,6 @@ class IOHLCVMarketEnv(gym.Env, MarketMixin):
     reward reaches its maximum
     """
     n_features = 5  # OHLCV
-    n_actions = 3  # buy, sell, stay
-
     action = ExchangeAction()
     state = {}  # type: dict
     np_random = None

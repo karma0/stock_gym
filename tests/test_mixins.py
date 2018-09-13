@@ -57,7 +57,7 @@ def test_get_random_index(create_market_mixin):
 def test_move_index(create_market_mixin):
     data = [1, 2, 3, 4, 5]
     mkt = create_market_mixin({
-        'max_observations': 1,
+        'max_observations': 2,
         'observation_size': len(data) - 1,
         'total_space_size': len(data),
         'data': data,
@@ -65,13 +65,13 @@ def test_move_index(create_market_mixin):
     mkt.idx = 0
     assert mkt._move_index()
     assert mkt.idx > 0
-    assert mkt.idx < (mkt.total_space_size -
+    assert mkt.idx <= (mkt.total_space_size -
                       (mkt.observation_size + mkt.max_observations - 2))
 
 def test_move_index_past_end(create_market_mixin):
     data = [1, 2, 3, 4, 5]
     mkt = create_market_mixin({
-        'max_observations': 1,
+        'max_observations': 2,
         'observation_size': len(data) - 1,
         'total_space_size': len(data),
         'data': data,
@@ -80,10 +80,21 @@ def test_move_index_past_end(create_market_mixin):
     assert mkt._move_index()
     assert not mkt._move_index()
 
-def test_get_observation(create_market_mixin):
+def test_move_index_past_max(create_market_mixin):
     data = [1, 2, 3, 4, 5]
     mkt = create_market_mixin({
         'max_observations': 1,
+        'observation_size': len(data) - 1,
+        'total_space_size': len(data),
+        'data': data,
+    })
+    mkt.idx = 0
+    assert not mkt._move_index()
+
+def test_get_observation(create_market_mixin):
+    data = [1, 2, 3, 4, 5]
+    mkt = create_market_mixin({
+        'max_observations': 2,
         'observation_size': len(data) - 1,
         'total_space_size': len(data),
         'data': data,

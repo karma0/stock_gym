@@ -69,7 +69,7 @@ class MarketMixin:
                 self.max_observations = self.total_space_size
 
     def _move_index(self):
-        if self.observed == self.max_observations:
+        if self.observed == self.max_observations - 1:
             return False
         self.observed += 1
         self.idx += 1
