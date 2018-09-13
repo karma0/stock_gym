@@ -12,13 +12,6 @@ class ILinearMarketEnv(gym.Env, MarketMixin):
     n_features = 1  # OHLCV == 5, linear values == 1
     n_actions = 3  # buy, sell, stay
 
-    def __init__(self):
-        self.observation_space = self.create_box_hist()
-        self.action_space = self.create_discrete_actions()
-        self.seed()
-        self.add_data()
-        self.reset()
-
     def step(self, action):
         assert action >= 0 and action < self.n_actions, \
                 f"Invalid Action: {action} of type: {type(action)}"
