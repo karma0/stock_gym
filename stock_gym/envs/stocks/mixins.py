@@ -1,12 +1,15 @@
 """Environment for trading"""
 
-from gym import spaces
-from gym.utils import seeding
+from collections import defaultdict
 
 import numpy as np
 
+import gym
+from gym import spaces
+from gym.utils import seeding
 
-class MarketMixin:
+
+class MarketEnvBase(gym.Env):
     """A mixin class for adding helpers to basic environment functionality"""
     max_observations = 256
     observation_size = 128
@@ -14,14 +17,14 @@ class MarketMixin:
     fee = -.001  # And/or penalty for inaction
     money = 1  # Bank
     reward_multiplier = 10
-    reward_failure = 1000  # subtracted from reward on fail
+    fail_reward = 1000  # subtracted from reward on fail
 
     n_features = 1  # OHLCV == 5, linear values == 1
     n_actions = 3  # buy, sell, stay
 
     data = None
 
-    changeable_params = [
+    configurables = [
         'max_observations',
         'observation_size',
         'total_space_size',
@@ -33,23 +36,25 @@ class MarketMixin:
         'data',
     ]
 
+    position = 0  # Amount vested
+    vested = 0  # Money vested
+
     metadata = {'render.modes': ['human']}
 
     idx = -1
     observed = 0
-    position = 0  # Money vested
 
     def __init__(self, **kwargs):
         self._set_params(kwargs)
 
-        self.action_space = self.create_discrete_actions()
-        self.observation_space = self.create_box_hist()
+        self.action_space = self.create_action_space()
+        self.observation_space = self.create_observation_space()
 
         self.seed()
         self.add_data(self.data)
 
     def _set_params(self, kwargs):
-        for parm in self.changeable_params:
+        for parm in self.configurables:
             val = kwargs.pop(parm, None)
             if val is not None:
                 setattr(self, parm, val)
@@ -92,20 +97,36 @@ class MarketMixin:
             (self.observation_size + self.max_observations - 2)
         )
 
-    def create_discrete_actions(self):
+    def reset(self):
+        self.set_random_index()
+        return self.get_observation()
+
+    def create_action_space(self):
+        """Generic discrete action space: buy, sell, stay"""
         return spaces.Discrete(self.n_actions)
 
-    def create_box_hist(self):
+    def create_observation_space(self):
         """Create a discrete space of size self.observation_size"""
-        return spaces.Box(
-            low=0,
-            high=self.total_space_size,
-            shape=(self.n_features, self.observation_size),
+        return spaces.Tuple(
+            [self.create_observation_point() for ix in range(self.observation_size)]
         )
 
-    def rotate(self, nparr, newitem):  # pylint: disable=no-self-use
-        """Rotate an item out on the left and in on the right"""
-        nparr = np.roll(nparr, -1)
-        olditem = nparr[-1]
-        nparr[-1] = newitem
-        return olditem
+    def create_observation_point(self):
+        """Create a tuple of gradients n_features wide"""
+        # Range is 0-1 for normalized gradients
+        return spaces.Tuple(
+            [spaces.Box(low=0, high=1, shape=(1,)) for ix in range(self.n_features)]
+        )
+
+
+class ContinuousMarketEnvBase(MarketEnvBase):
+    amount_range = 1000
+    bids: dict = defaultdict(int)  # bid_price => amount
+
+    def create_action_space(self):
+        """Amount of currency to purchase at the current price"""
+        return spaces.Box(
+            low=-self.amount_range * self.money,
+            high=self.amount_range * self.money,
+            shape=(1,)
+        )

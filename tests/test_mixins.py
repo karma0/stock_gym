@@ -26,7 +26,7 @@ def test_set_parameters(create_market_mixin):
     assert len(mkt.data) == 12345
 
 def test_set_data(create_market_mixin):
-    data = [1, 2, 3, 4, 5]
+    data = [.1, .2, .3, .4, .5]
     mkt = create_market_mixin({'data': data})
 
     assert len(mkt.data) == len(data)
@@ -41,7 +41,7 @@ def test_generate_data(create_market_mixin, get_flatline):
     assert mkt.data.all() == get_flatline(12, 12345)
 
 def test_get_random_index(create_market_mixin):
-    data = [1, 2, 3, 4, 5]
+    data = [.1, .2, .3, .4, .5]
     mkt = create_market_mixin({
         'max_observations': 1,
         'observation_size': len(data),
@@ -55,7 +55,7 @@ def test_get_random_index(create_market_mixin):
                       (mkt.observation_size + mkt.max_observations - 2))
 
 def test_move_index(create_market_mixin):
-    data = [1, 2, 3, 4, 5]
+    data = [.1, .2, .3, .4, .5]
     mkt = create_market_mixin({
         'max_observations': 2,
         'observation_size': len(data) - 1,
@@ -69,7 +69,7 @@ def test_move_index(create_market_mixin):
                       (mkt.observation_size + mkt.max_observations - 2))
 
 def test_move_index_past_end(create_market_mixin):
-    data = [1, 2, 3, 4, 5]
+    data = [.1, .2, .3, .4, .5]
     mkt = create_market_mixin({
         'max_observations': 2,
         'observation_size': len(data) - 1,
@@ -92,7 +92,7 @@ def test_move_index_past_max(create_market_mixin):
     assert not mkt._move_index()
 
 def test_get_observation(create_market_mixin):
-    data = [1, 2, 3, 4, 5]
+    data = [.1, .2, .3, .4, .5]
     mkt = create_market_mixin({
         'max_observations': 2,
         'observation_size': len(data) - 1,

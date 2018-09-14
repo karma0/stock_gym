@@ -5,8 +5,8 @@
 import pytest
 import numpy as np
 
-from stock_gym.envs.stocks.mixins import MarketMixin
-from stock_gym.envs.stocks.imarket import ILinearMarketEnv
+from stock_gym.envs.stocks.mixins import MarketEnvBase
+from stock_gym.envs.stocks.imarket import IContinuousLinearMarketEnv, ILinearMarketEnv
 
 
 @pytest.fixture
@@ -19,13 +19,19 @@ def create_market():
 @pytest.fixture
 def create_market_mixin(create_market):
     def _create_market(kwargs=None):
-        return create_market(MarketMixin, kwargs)
+        return create_market(MarketEnvBase, kwargs)
     return _create_market
 
 @pytest.fixture
 def create_i_linear_market_env(create_market):
     def _create_market(kwargs=None):
         return create_market(ILinearMarketEnv, kwargs)
+    return _create_market
+
+@pytest.fixture
+def create_i_cont_linear_market_env(create_market):
+    def _create_market(kwargs=None):
+        return create_market(IContinuousLinearMarketEnv, kwargs)
     return _create_market
 
 

@@ -5,10 +5,14 @@ from gym import spaces
 import numpy as np
 
 from stock_gym.envs.stocks.actions import ExchangeAction
-from stock_gym.envs.stocks.mixins import MarketMixin
+from stock_gym.envs.stocks.mixins import ContinuousMarketEnvBase, MarketEnvBase
 
 
-class ILinearMarketEnv(gym.Env, MarketMixin):
+class ILinearMarketEnv(MarketEnvBase):
+    """Linear market environment
+        Linear, single variable system that allows for buy, sell, stay. Doesn't
+            allow for multiple consecutive buys or sells.
+    """
     def step(self, action):
         assert action >= 0 and action < self.n_actions, \
                 f"Invalid Action: {action} of type: {type(action)}"
@@ -17,21 +21,23 @@ class ILinearMarketEnv(gym.Env, MarketMixin):
         price = self.data[self.idx + self.observation_size - 1]
         reward = self.fee
         if action == 0:  # buy
+            if self.position > 0:  # We can only invest once at a time
+                reward -= self.fail_reward
             if self.money <= 0:  # Can't buy if you have no money
-                reward -= self.reward_failure
+                reward -= self.fail_reward
             else:
                 reward -= price
             self.position += price
             self.money += reward
         elif action == 1:  # sell
             if self.position <= 0:  # Can't sell if you aren't vested
-                returns = -1 * self.reward_failure
+                returns = -1 * self.fail_reward
             else:
                 returns = price - self.position
             reward += self.position + returns
             self.money += reward
             reward *= self.reward_multiplier
-            self.position = 0
+            self.position = 0  # TODO: this is problematic
         elif action == 2:  # stay
             self.money += reward
 
@@ -44,17 +50,91 @@ class ILinearMarketEnv(gym.Env, MarketMixin):
 
         return (
             self.get_observation(),
-            reward,  #* self.reward_multiplier,
+            reward,
             done,
             {}
         )
 
-    def reset(self):
-        self.set_random_index()
-        return self.get_observation()
+
+class IContinuousLinearMarketEnv(ContinuousMarketEnvBase):
+    """Linear market environment
+        Linear, single variable system that allows for buy, sell, stay.  Doesn't
+            allow for multiple consecutive buys or sells.
+    """
+    def update_position(self, amount, price):
+        if amount > 0:  # buying
+            self.bids[price] += amount
+            self.position += amount
+            self.vested += amount * price
+        elif amount < 0:  # selling
+            amt = abs(amount)
+            selling_vested = 0
+            for _bid, _amt in reversed(sorted(self.bids.items())):
+                if amt > 0:
+                    if amt >= _amt:
+                        selling_vested += _bid * _amt
+                        self.bids.pop(_bid)
+                        self.position -= _amt
+                        amt -= _amt
+                    else:
+                        selling_vested += _bid * amt
+                        self.bids[_bid] -= amt
+                        self.position -= amt
+                        amt = 0
+                else:
+                    break
+
+            returns = price * abs(amount) - selling_vested
+            self.vested -= selling_vested
+            return returns
+
+    def step(self, amount):
+        assert amount >= -self.money and amount < self.money, \
+            f"Invalid Action: {amount} for amount."
+
+        # calculate price, reward, position, and bank (money)
+        price = self.data[self.idx + self.observation_size - 1]
+        total_price = amount * price
+        calc_fee = 0
+        if total_price >= 0:  # no fee on sell
+            calc_fee += self.fee * total_price  # a negative value
+
+        reward = calc_fee
+        if total_price > abs(calc_fee):  # buy
+            if self.money < total_price:  # Can't buy if you have no money
+                reward -= self.fail_reward
+            else:
+                reward -= total_price
+            self.update_position(amount, price)
+            self.money += reward
+        elif total_price < calc_fee:  # sell
+            if self.position <= amount:  # Can't sell if you aren't vested
+                returns = -1 * self.fail_reward
+            else:
+                returns = self.update_position(amount, price)
+            reward += abs(total_price) + returns
+            self.money += reward
+            reward *= self.reward_multiplier
+        else:  # stay
+            reward = self.fee
+            self.money += reward
+
+        # End if we're out of money
+        done = self.money <= 0
+
+        # Prep index for next observation or end run if we're out of time
+        if not self._move_index():
+            done = True
+
+        return (
+            self.get_observation(),
+            reward,
+            done,
+            {}
+        )
 
 
-class IOHLCVMarketEnv(gym.Env, MarketMixin):
+class IOHLCVMarketEnv(MarketEnvBase):
     """
     Base Market Environment Interface
 
