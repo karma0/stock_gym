@@ -11,9 +11,10 @@ class MarketMixin:
     max_observations = 256
     observation_size = 128
     total_space_size = 65536
-    fee = .001  # And/or penalty for inaction
+    fee = -.001  # And/or penalty for inaction
     money = 1  # Bank
     reward_multiplier = 10
+    reward_failure = 1000  # subtracted from reward on fail
 
     n_features = 1  # OHLCV == 5, linear values == 1
     n_actions = 3  # buy, sell, stay

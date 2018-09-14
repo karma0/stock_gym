@@ -10,15 +10,6 @@ from stock_gym.envs.stocks.imarket import ILinearMarketEnv
 
 
 @pytest.fixture
-def response():
-    """Sample pytest fixture.
-
-    See more at: http://doc.pytest.org/en/latest/fixture.html
-    """
-    # import requests
-    # return requests.get('https://github.com/audreyr/cookiecutter-pypackage')
-
-@pytest.fixture
 def create_market():
     def _create_market(market_class, kwargs):
         kwargs = {} if kwargs is None else kwargs

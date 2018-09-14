@@ -18,20 +18,22 @@ class ILinearMarketEnv(gym.Env, MarketMixin):
         reward = self.fee
         if action == 0:  # buy
             if self.money <= 0:  # Can't buy if you have no money
-                reward -= 1000
+                reward -= self.reward_failure
             else:
                 reward -= price
             self.position += price
             self.money += reward
         elif action == 1:  # sell
             if self.position <= 0:  # Can't sell if you aren't vested
-                returns = -1000
+                returns = -1 * self.reward_failure
             else:
                 returns = price - self.position
             reward += self.position + returns
             self.money += reward
             reward *= self.reward_multiplier
             self.position = 0
+        elif action == 2:  # stay
+            self.money += reward
 
         # End if we're out of money
         done = self.money <= 0
