@@ -1,8 +1,10 @@
 """Environment for trading"""
 
 from collections import defaultdict
+import random
 
 import numpy as np
+import pandas as pd
 
 import gym
 from gym import spaces
@@ -18,6 +20,10 @@ class MarketEnvBase(gym.Env):
     money = 1  # Bank
     reward_multiplier = 10
     fail_reward = 1000  # subtracted from reward on fail
+
+    # Market generation metrics
+    volitility = .1  # volitility for generated data
+    start_price = .1
 
     n_features = 1  # OHLCV == 5, linear values == 1
     n_actions = 3  # buy, sell, stay
@@ -59,8 +65,17 @@ class MarketEnvBase(gym.Env):
             if val is not None:
                 setattr(self, parm, val)
 
+    def _gen_element(self, last_price):
+        change = 2 * self.volitility * random.random()
+        if change > self.volitility:
+            change -= (2 * self.volitility)
+        return last_price + last_price * change
+
     def _generate_data(self):
-        # Straight line at .5
+        #elements = [self.start_price]
+        #for a in range(self.total_space_size):
+        #    elements.append(self._gen_element(elements[-1]))
+        # Return a straight line at .5
         return np.full((self.n_features, self.total_space_size), .5)[0]
 
     def add_data(self, data=None):
@@ -115,18 +130,155 @@ class MarketEnvBase(gym.Env):
         """Create a tuple of gradients n_features wide"""
         # Range is 0-1 for normalized gradients
         return spaces.Tuple(
-            [spaces.Box(low=0, high=1, shape=(1,)) for ix in range(self.n_features)]
+            [spaces.Box(low=0, high=1, shape=(1,), dtype=np.float32)
+                for ix in range(self.n_features)]
         )
 
 
-class ContinuousMarketEnvBase(MarketEnvBase):
+class OHLCVMixin:
+    """Provides utility functions and boiler configuration around OHLCV"""
+    n_features = 5  # OHLCV == 5, linear values == 1
+    time_start = '1/1/2018'
+    time_end = '1/2/2018'
+    time_freq = 'S'  # Nanosecond-level granularity
+    ohclv_freq = '30Sec'
+
+    # Add this many samples for downsample to OHLCV. This should be the
+    #  average number of order executions per generated OHLCV period.
+    samplesize = .75
+
+    lastrow = None
+    generated_row_count = 0
+
+    def convert_to_ohlcv(self):
+        self.raw_data = self.data.copy()
+        ohlc = self.data['price'].resample(self.ohclv_freq)
+        volume = self.data['quantity'].resample(self.ohlcv_freq).sum().fillna(0)
+
+        ohlcv = pd.concat([ohlc, volume], axis=1)
+        ohlcv.columns.values[-1] = 'volume'
+
+        self.lastrow = ohlcv.iloc[0].copy()
+
+        def update_nan(row):
+            """Forward fill NaN in OHLC fields"""
+            if row.volume == 0:
+                row.open = self.lastrow.close
+                row.high = self.lastrow.close
+                row.low = self.lastrow.close
+                row.close = self.lastrow.close
+            self.lastrow = row.copy()
+            return row
+
+        self.data = ohlcv.apply(update_nan, axis=1)
+        self.lastrow = None
+
+    def add_time_index(self):
+        dates = pd.DataFrame(
+            {
+                'timestamp': pd.date_range(
+                    start=self.time_start,
+                    end=self.time_end,
+                    freq=self.time_freq,
+                ),
+            },
+            index='timestamp',
+        ).sample(self.generated_row_count)
+
+        self.data = pd.concat([dates, self.data], axis=1)
+        self.data.set_index('timestamp')
+
+    def _generate_data(self):
+        elements = [self.start_price]
+        for a in range(self.generated_row_count):
+            elements.append(self._gen_element(elements[-1]))
+
+    def add_data(self, data=None):
+        """Add data to backend"""
+        if data is not None:
+            self.generated_row_count = len(self.data)
+        else:
+            self.generated_row_count = \
+                round((1 + self.samplesize) * self.total_space_size)
+        super().add_data(data)
+        self.add_time_index()
+        self.convert_to_ohlcv()
+
+
+class ContinuousMixin:
+    """Provides a continuous action interface"""
     amount_range = 1000
     bids: dict = defaultdict(int)  # bid_price => amount
+    money: int
+
+    position = 0  # Amount vested
+    vested = 0  # Money vested
 
     def create_action_space(self):
         """Amount of currency to purchase at the current price"""
         return spaces.Box(
             low=-self.amount_range * self.money,
             high=self.amount_range * self.money,
-            shape=(1,)
+            shape=(1,),
+            dtype=np.float32,
         )
+
+    def calculate_reward(self, amount, price):
+        total_price = amount * price
+        if total_price > 0:  # buy
+            return self.go_long(amount, price)
+        elif total_price < 0:  # sell
+            return self.short(abs(amount), price)
+        else:  # stay
+            return self.stay()
+
+    def go_long(self, amount, price):
+        total_price = amount * price
+        reward = self.fee * total_price
+
+        if self.money < total_price:  # Can't buy if you have no money
+            reward -= self.fail_reward
+        else:
+            reward -= total_price
+
+        self.bids[price] += amount
+        self.position += amount
+        self.vested += total_price
+        self.money += reward
+        return reward
+
+    def short(self, amount, price):
+        total_price = amount * price
+        reward = self.fee * total_price
+        returns = self.calculate_returns(amount, price)
+        reward += total_price + returns
+        self.money += reward
+        return reward * self.reward_multiplier
+
+    def stay(self):
+        self.money += self.fee
+        return self.fee
+
+    def calculate_returns(self, amount, price):
+        if self.position < amount:
+            return -1 * self.fail_reward
+
+        selling_vested = 0
+        amt = amount
+        for _bid, _amt in reversed(sorted(self.bids.items())):
+            if amt > 0:
+                if amt >= _amt:
+                    selling_vested += _bid * _amt
+                    self.bids.pop(_bid)
+                    self.position -= _amt
+                    amt -= _amt
+                else:
+                    selling_vested += _bid * amt
+                    self.bids[_bid] -= amt
+                    self.position -= amt
+                    amt = 0
+            else:
+                break
+
+        self.vested -= selling_vested
+        return amount * price - selling_vested

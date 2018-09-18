@@ -40,47 +40,37 @@ def test_observation_on_step_buy(create_i_cont_linear_market_env):
     (observation, reward, done, info) = mkt.step(0.1)
     assert observation == mkt.data[1:]
 
-# UPDATE_POSITION
-def test_update_position_on_buy(create_i_cont_linear_market_env):
-    mkt = create_i_cont_linear_market_env(TEST_INC_PARAMS)
-    mkt.idx = 0
-    price = mkt.data[-2]
-    assert mkt.vested == 0
-    assert mkt.position == 0
-    assert mkt.update_position(.1, price) is None
-    assert mkt.vested == .1 * price
-    assert mkt.position == .1
-
-def test_update_position_on_sell(create_i_cont_linear_market_env):
+# CALCULATE_RETURNS CALL
+def test_calculate_returns_on_sell(create_i_cont_linear_market_env):
     mkt = create_i_cont_linear_market_env(TEST_INC_PARAMS)
     mkt.idx = 0
     price = mkt.data[-2]
     mkt.bids = {.1: 2}
     mkt.vested = .2
     mkt.position = 2
-    assert round(mkt.update_position(-1, price), 2) == .3
+    assert round(mkt.calculate_returns(1, price), 2) == .3
     assert mkt.position == 1
     assert mkt.vested == .1
 
-def test_update_position_on_sell_eq_amt(create_i_cont_linear_market_env):
+def test_calculate_returns_on_sell_eq_amt(create_i_cont_linear_market_env):
     mkt = create_i_cont_linear_market_env(TEST_INC_PARAMS)
     mkt.idx = 0
     price = mkt.data[-2]
     mkt.bids = {.1: 1}
     mkt.position = 1
     mkt.vested = .1
-    assert round(mkt.update_position(-1, price), 2) == .3
+    assert round(mkt.calculate_returns(1, price), 2) == .3
     assert mkt.position == 0
     assert mkt.vested == 0
 
-def test_update_position_on_sell_hi_amt(create_i_cont_linear_market_env):
+def test_calculate_returns_on_sell_hi_amt(create_i_cont_linear_market_env):
     mkt = create_i_cont_linear_market_env(TEST_INC_PARAMS)
     mkt.idx = 0
     price = mkt.data[-2]
     mkt.bids = {.1: 2, .2: 1}
     mkt.position = 3
     mkt.vested = .4
-    assert round(mkt.update_position(-2, price), 2) == .5
+    assert round(mkt.calculate_returns(2, price), 2) == .5
     assert mkt.bids == {.1: 1}
     assert mkt.position == 1
     assert round(mkt.vested, 2) == .1
@@ -100,8 +90,9 @@ def test_reward_on_step_sell(create_i_cont_linear_market_env):
     mkt.bids = {.1: 1}
     mkt.position = 1
     mkt.vested = .1
-    #price = mkt.data[-2]
     (observation, reward, done, info) = mkt.step(-1)
+    assert mkt.position == 0
+    assert mkt.vested == 0
     assert round(reward, 2) == 7
 
 def test_reward_on_step_no_act(create_i_cont_linear_market_env):
@@ -130,7 +121,7 @@ def test_position_on_step_sell(create_i_cont_linear_market_env):
     (observation, reward, done, info) = mkt.step(-0.1)
     assert mkt.bids == {.1: .9}
     assert mkt.position == .9
-    assert mkt.money == 1.07
+    assert round(mkt.money, 3) == 1.07
     assert mkt.vested == round(.9 * .1, 2)
 
 def test_position_on_step_no_act(create_i_cont_linear_market_env):

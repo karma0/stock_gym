@@ -4,8 +4,8 @@ from gym.envs.registration import registry, register, make, spec
 
 # Public classes
 from stock_gym.envs.stocks.basic import LinMarketEnv, NegLinMarketEnv,\
-                                        SinMarketEnv, FakeMarketEnv, \
-                                        OHLCVMarketEnv
+                                        SinMarketEnv, FlatLinMarketEnv, \
+                                        ContSinMarketEnv, OHLCVMarketEnv
 
 
 register(
