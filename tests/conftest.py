@@ -4,6 +4,7 @@
 
 import pytest
 import numpy as np
+import pandas as pd
 
 from stock_gym.envs.stocks.mixins import MarketEnvBase
 from stock_gym.envs.stocks.imarket import \
@@ -45,18 +46,18 @@ def create_i_cont_linear_market_env(create_market):
     return _create_market
 
 # IContinuousOHLCVMarketEnv
-#@pytest.fixture
-#def create_i_cont_ohlcv_market_env(create_market):
-#    def _create_market(kwargs=None):
-#        return create_market(IContinuousOHLCVMarketEnv, kwargs)
-#    return _create_market
-
-# IOHLCVMarketEnv
 @pytest.fixture
 def create_i_cont_ohlcv_market_env(create_market):
     def _create_market(kwargs=None):
-        return create_market(IOHLCVMarketEnv, kwargs)
+        return create_market(IContinuousOHLCVMarketEnv, kwargs)
     return _create_market
+
+## IOHLCVMarketEnv
+#@pytest.fixture
+#def create_i_cont_ohlcv_market_env(create_market):
+#    def _create_market(kwargs=None):
+#        return create_market(IOHLCVMarketEnv, kwargs)
+#    return _create_market
 
 
 #####
@@ -66,6 +67,9 @@ def create_i_cont_ohlcv_market_env(create_market):
 # Get flat line
 @pytest.fixture
 def get_flatline():
-    def _create(n_features, total_space_size):
-        return np.full((n_features, total_space_size), .5)[0].all()
+    def _create(columns, total_space_size):
+        return pd.DataFrame(
+            np.full((len(columns), total_space_size), .5)[0],
+            columns=columns,
+        )
     return _create

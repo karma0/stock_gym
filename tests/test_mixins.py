@@ -1,5 +1,8 @@
 import pytest
 
+import numpy as np
+import pandas as pd
+
 
 TEST_PARAMS = {
     'max_observations': 123,
@@ -8,6 +11,10 @@ TEST_PARAMS = {
     'fee': .123,
     'money': 1234,
     'reward_multiplier': 12,
+    'columns': [
+        'A', 'B', 'C', 'D', 'E', 'F',
+        'G', 'H', 'I', 'J', 'K', 'L',
+    ],
     'n_features': 12,
     'n_actions': 12,
 }
@@ -21,6 +28,10 @@ def test_set_parameters(create_market_mixin):
     assert mkt.fee == .123
     assert mkt.money == 1234
     assert mkt.reward_multiplier == 12
+    assert not (mkt.columns - [
+        'A', 'B', 'C', 'D', 'E', 'F',
+        'G', 'H', 'I', 'J', 'K', 'L',
+    ]).any()
     assert mkt.n_features == 12
     assert mkt.n_actions == 12
     assert len(mkt.data) == 12345
@@ -35,10 +46,14 @@ def test_set_data(create_market_mixin):
     assert mkt.observation_size == len(data)
     assert mkt.max_observations == len(data)
 
-def test_generate_data(create_market_mixin, get_flatline):
+def _test_generate_data(create_market_mixin):
     mkt = create_market_mixin(TEST_PARAMS)
+    #cols = TEST_PARAMS['columns']
     # Should be a straight line at .5
-    assert mkt.data.all() == get_flatline(12, 12345)
+    #assert not (mkt.data - pd.DataFrame(
+    #    np.full((12, 12345), .5)[0],
+    #    columns=cols,
+    #)).any()
 
 def test_get_random_index(create_market_mixin):
     data = [.1, .2, .3, .4, .5]

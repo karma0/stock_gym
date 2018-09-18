@@ -25,6 +25,7 @@ class MarketEnvBase(gym.Env):
     volitility = .1  # volitility for generated data
     start_price = .1
 
+    columns = ['price']  # DataFrame columns
     n_features = 1  # OHLCV == 5, linear values == 1
     n_actions = 3  # buy, sell, stay
 
@@ -37,6 +38,7 @@ class MarketEnvBase(gym.Env):
         'fee',
         'money',
         'reward_multiplier',
+        'columns',
         'n_features',
         'n_actions',
         'data',
@@ -71,17 +73,20 @@ class MarketEnvBase(gym.Env):
             change -= (2 * self.volitility)
         return last_price + last_price * change
 
-    def _generate_data(self):
-        #elements = [self.start_price]
-        #for a in range(self.total_space_size):
-        #    elements.append(self._gen_element(elements[-1]))
+    def _generate_data(self, length=None):
+        length = self.total_space_size if length is None else length
         # Return a straight line at .5
-        return np.full((self.n_features, self.total_space_size), .5)[0]
+        return pd.DataFrame(
+            np.full((self.n_features, length), .5)[0],
+            columns=self.columns,
+        )
 
-    def add_data(self, data=None):
+    def add_data(self, data=None, length=None):
         """Add data to backend"""
-        if self.data is None:
-            self.data = data if data is not None else self._generate_data()
+        if self.data is None:  # allows for init override of data
+            self.data = self._generate_data(length) \
+                        if data is None \
+                        else pd.DataFrame(data, columns=self.columns)
         else:
             self.total_space_size = len(self.data)
             if self.observation_size > self.total_space_size:
@@ -138,6 +143,7 @@ class MarketEnvBase(gym.Env):
 class OHLCVMixin:
     """Provides utility functions and boiler configuration around OHLCV"""
     n_features = 5  # OHLCV == 5, linear values == 1
+    columns = ['price', 'quantity']
     time_start = '1/1/2018'
     time_end = '1/2/2018'
     time_freq = 'S'  # Nanosecond-level granularity
@@ -146,6 +152,9 @@ class OHLCVMixin:
     # Add this many samples for downsample to OHLCV. This should be the
     #  average number of order executions per generated OHLCV period.
     samplesize = .75
+
+    # Base volume by which to generate random movement
+    volume_base = .1
 
     lastrow = None
     generated_row_count = 0
@@ -173,7 +182,8 @@ class OHLCVMixin:
         self.data = ohlcv.apply(update_nan, axis=1)
         self.lastrow = None
 
-    def add_time_index(self):
+    def add_time_index(self, length=None):
+        length = self.generated_row_count if length is None else length
         dates = pd.DataFrame(
             {
                 'timestamp': pd.date_range(
@@ -188,19 +198,27 @@ class OHLCVMixin:
         self.data = pd.concat([dates, self.data], axis=1)
         self.data.set_index('timestamp')
 
-    def _generate_data(self):
-        elements = [self.start_price]
-        for a in range(self.generated_row_count):
-            elements.append(self._gen_element(elements[-1]))
+    def _generate_data(self, length=None):
+        length = self.generated_row_count if length is None else length
+        prices = [self.start_price]
+        for a in range(length):
+            new_price = self._gen_element(prices[-1])
+            amount = random.random() * (new_price - prices[-1])
+            prices.append([new_price, amount])
+        return pd.DataFrame.from_records(prices, columns=self.columns)
 
-    def add_data(self, data=None):
+    def add_data(self, data=None, length=None):
         """Add data to backend"""
-        if data is not None:
-            self.generated_row_count = len(self.data)
-        else:
+        if data is None:
             self.generated_row_count = \
                 round((1 + self.samplesize) * self.total_space_size)
-        super().add_data(data)
+        else:
+            self.generated_row_count = len(data)
+
+        length = self.generated_row_count if length is None else length
+        #self.data = self._generate_data(length)
+        super().add_data(data=data, length=self.generated_row_count)
+
         self.add_time_index()
         self.convert_to_ohlcv()
 
