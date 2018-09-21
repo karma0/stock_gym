@@ -3,6 +3,8 @@ import pytest
 import numpy as np
 import pandas as pd
 
+from pandas.testing import assert_frame_equal
+
 
 TEST_PARAMS = {
     'max_observations': 123,
@@ -28,35 +30,34 @@ def test_set_parameters(create_market_mixin):
     assert mkt.fee == .123
     assert mkt.money == 1234
     assert mkt.reward_multiplier == 12
-    assert not (mkt.columns - [
-        'A', 'B', 'C', 'D', 'E', 'F',
-        'G', 'H', 'I', 'J', 'K', 'L',
-    ]).any()
+    assert mkt.columns == TEST_PARAMS['columns']
     assert mkt.n_features == 12
     assert mkt.n_actions == 12
     assert len(mkt.data) == 12345
+    assert mkt.shape() == (12, len(mkt.data))
 
 def test_set_data(create_market_mixin):
-    data = [.1, .2, .3, .4, .5]
+    data = pd.DataFrame({'price': [.1, .2, .3, .4, .5]})
     mkt = create_market_mixin({'data': data})
 
     assert len(mkt.data) == len(data)
-    assert mkt.data == data
+    assert_frame_equal(mkt.data, data)
     assert mkt.total_space_size == len(data)
     assert mkt.observation_size == len(data)
     assert mkt.max_observations == len(data)
+    assert mkt.shape() == (1, len(data))
 
-def _test_generate_data(create_market_mixin):
+def test_generate_data(create_market_mixin):
     mkt = create_market_mixin(TEST_PARAMS)
-    #cols = TEST_PARAMS['columns']
-    # Should be a straight line at .5
-    #assert not (mkt.data - pd.DataFrame(
-    #    np.full((12, 12345), .5)[0],
-    #    columns=cols,
-    #)).any()
+    cols = TEST_PARAMS['columns']
+    # Data should be a straight line at .5
+    assert_frame_equal(mkt.data, pd.DataFrame(
+        np.full((12345, len(cols)), .5),
+        columns=cols,
+    ))
 
 def test_get_random_index(create_market_mixin):
-    data = [.1, .2, .3, .4, .5]
+    data = pd.DataFrame({'price': [.1, .2, .3, .4, .5]})
     mkt = create_market_mixin({
         'max_observations': 1,
         'observation_size': len(data),
@@ -70,7 +71,7 @@ def test_get_random_index(create_market_mixin):
                       (mkt.observation_size + mkt.max_observations - 2))
 
 def test_move_index(create_market_mixin):
-    data = [.1, .2, .3, .4, .5]
+    data = pd.DataFrame({'price': [.1, .2, .3, .4, .5]})
     mkt = create_market_mixin({
         'max_observations': 2,
         'observation_size': len(data) - 1,
@@ -84,7 +85,7 @@ def test_move_index(create_market_mixin):
                       (mkt.observation_size + mkt.max_observations - 2))
 
 def test_move_index_past_end(create_market_mixin):
-    data = [.1, .2, .3, .4, .5]
+    data = pd.DataFrame({'price': [.1, .2, .3, .4, .5]})
     mkt = create_market_mixin({
         'max_observations': 2,
         'observation_size': len(data) - 1,
@@ -96,7 +97,7 @@ def test_move_index_past_end(create_market_mixin):
     assert not mkt._move_index()
 
 def test_move_index_past_max(create_market_mixin):
-    data = [1, 2, 3, 4, 5]
+    data = pd.DataFrame({'price': [.1, .2, .3, .4, .5]})
     mkt = create_market_mixin({
         'max_observations': 1,
         'observation_size': len(data) - 1,
@@ -107,7 +108,7 @@ def test_move_index_past_max(create_market_mixin):
     assert not mkt._move_index()
 
 def test_get_observation(create_market_mixin):
-    data = [.1, .2, .3, .4, .5]
+    data = pd.DataFrame({'price': [.1, .2, .3, .4, .5]})
     mkt = create_market_mixin({
         'max_observations': 2,
         'observation_size': len(data) - 1,
@@ -117,4 +118,4 @@ def test_get_observation(create_market_mixin):
     mkt.idx = 0
     assert mkt._move_index()
     assert len(mkt.get_observation()) == mkt.observation_size
-    assert mkt.get_observation() == mkt.data[1:]
+    assert_frame_equal(mkt.get_observation(), mkt.data[1:])

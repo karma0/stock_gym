@@ -13,9 +13,9 @@ from gym.utils import seeding
 
 class MarketEnvBase(gym.Env):
     """A mixin class for adding helpers to basic environment functionality"""
-    max_observations = 256
-    observation_size = 128
-    total_space_size = 65536
+    max_observations = 128
+    observation_size = 64
+    total_space_size = 4096
     fee = -.001  # And/or penalty for inaction
     money = 1  # Bank
     reward_multiplier = 10
@@ -29,7 +29,7 @@ class MarketEnvBase(gym.Env):
     n_features = 1  # OHLCV == 5, linear values == 1
     n_actions = 3  # buy, sell, stay
 
-    data = None
+    data: pd.DataFrame = None
 
     configurables = [
         'max_observations',
@@ -67,6 +67,12 @@ class MarketEnvBase(gym.Env):
             if val is not None:
                 setattr(self, parm, val)
 
+    def shape(self):
+        return (self.n_features, len(self.data))
+
+    def observation_shape(self):
+        return (self.n_features, self.observation_size)
+
     def _gen_element(self, last_price):
         change = 2 * self.volitility * random.random()
         if change > self.volitility:
@@ -77,14 +83,14 @@ class MarketEnvBase(gym.Env):
         length = self.total_space_size if length is None else length
         # Return a straight line at .5
         return pd.DataFrame(
-            np.full((self.n_features, length), .5)[0],
+            np.full((length, self.n_features), .5),
             columns=self.columns,
         )
 
     def add_data(self, data=None, length=None):
         """Add data to backend"""
         if self.data is None:  # allows for init override of data
-            self.data = self._generate_data(length) \
+            self.data = self._generate_data(length=length) \
                         if data is None \
                         else pd.DataFrame(data, columns=self.columns)
         else:
@@ -228,6 +234,8 @@ class ContinuousMixin:
     amount_range = 1000
     bids: dict = defaultdict(int)  # bid_price => amount
     money: int
+
+    n_actions = 1  # Amount
 
     position = 0  # Amount vested
     vested = 0  # Money vested

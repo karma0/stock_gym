@@ -29,6 +29,11 @@ register(
     )
 
 register(
+    id='ContSinMarketEnv-v0',
+    entry_point='stock_gym.envs.stocks:ContSinMarketEnv',
+    )
+
+register(
     id='OHLCVMarketEnv-v0',
     entry_point='stock_gym.envs.stocks:OHLCVMarketEnv',
     )

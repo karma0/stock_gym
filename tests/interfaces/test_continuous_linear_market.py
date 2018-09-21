@@ -1,18 +1,23 @@
 import pytest
 
+import pandas as pd
+import numpy as np
+
+from pandas.util.testing import assert_frame_equal
+
 
 TEST_INC_PARAMS = {  # Allow for 1 increment
     'max_observations': 2,
     'observation_size': 4,
     'total_space_size': 5,
-    'data': [.1, .2, .3, .4, .5],
+    'data': pd.DataFrame({'price': [.1, .2, .3, .4, .5]}),
 }
 
 TEST_NOT_INC_PARAMS = {  # Don't allow for any increments
     'max_observations': 1,
     'observation_size': 5,
     'total_space_size': 5,
-    'data': [.1, .2, .3, .4, .5],
+    'data': pd.DataFrame({'price': [.1, .2, .3, .4, .5]}),
 }
 
 
@@ -23,7 +28,7 @@ TEST_NOT_INC_PARAMS = {  # Don't allow for any increments
 # RESET
 def test_reset_to_zero(create_i_cont_ohlcv_market_env):
     mkt = create_i_cont_ohlcv_market_env(TEST_INC_PARAMS)
-    assert mkt.reset() == mkt.get_observation()
+    assert_frame_equal(mkt.reset(), mkt.get_observation())
     assert mkt.idx == 0
 
 # LAST STEP
@@ -38,13 +43,13 @@ def test_observation_on_step_buy(create_i_cont_ohlcv_market_env):
     mkt = create_i_cont_ohlcv_market_env(TEST_INC_PARAMS)
     mkt.idx = 0
     (observation, reward, done, info) = mkt.step(0.1)
-    assert observation == mkt.data[1:]
+    assert_frame_equal(observation, mkt.data[1:])
 
 # CALCULATE_RETURNS CALL
 def test_calculate_returns_on_sell(create_i_cont_ohlcv_market_env):
     mkt = create_i_cont_ohlcv_market_env(TEST_INC_PARAMS)
     mkt.idx = 0
-    price = mkt.data[-2]
+    price = mkt.data.price.iloc[-2]
     mkt.bids = {.1: 2}
     mkt.vested = .2
     mkt.position = 2
@@ -55,7 +60,7 @@ def test_calculate_returns_on_sell(create_i_cont_ohlcv_market_env):
 def test_calculate_returns_on_sell_eq_amt(create_i_cont_ohlcv_market_env):
     mkt = create_i_cont_ohlcv_market_env(TEST_INC_PARAMS)
     mkt.idx = 0
-    price = mkt.data[-2]
+    price = mkt.data.price.iloc[-2]
     mkt.bids = {.1: 1}
     mkt.position = 1
     mkt.vested = .1
@@ -66,7 +71,7 @@ def test_calculate_returns_on_sell_eq_amt(create_i_cont_ohlcv_market_env):
 def test_calculate_returns_on_sell_hi_amt(create_i_cont_ohlcv_market_env):
     mkt = create_i_cont_ohlcv_market_env(TEST_INC_PARAMS)
     mkt.idx = 0
-    price = mkt.data[-2]
+    price = mkt.data.price.iloc[-2]
     mkt.bids = {.1: 2, .2: 1}
     mkt.position = 3
     mkt.vested = .4
@@ -79,7 +84,7 @@ def test_calculate_returns_on_sell_hi_amt(create_i_cont_ohlcv_market_env):
 def test_reward_on_step_buy(create_i_cont_ohlcv_market_env):
     mkt = create_i_cont_ohlcv_market_env(TEST_INC_PARAMS)
     mkt.idx = 0
-    price = mkt.data[-2] * .1
+    price = mkt.data.price.iloc[-2] * .1
     (observation, reward, done, info) = mkt.step(0.1)
     calc_fee = mkt.fee * price
     assert reward == calc_fee - price
@@ -106,7 +111,7 @@ def test_position_on_step_buy(create_i_cont_ohlcv_market_env):
     mkt = create_i_cont_ohlcv_market_env(TEST_INC_PARAMS)
     mkt.idx = 0
     mkt.money = 31.4
-    price = mkt.data[-2]
+    price = mkt.data.price.iloc[-2]
     (observation, reward, done, info) = mkt.step(0.1)
     assert mkt.vested == price * .1
     assert mkt.position == .1
@@ -117,7 +122,7 @@ def test_position_on_step_sell(create_i_cont_ohlcv_market_env):
     mkt.bids = {.1: 1}
     mkt.position = 1
     mkt.vested = .1
-    price = mkt.data[-2]
+    price = mkt.data.price.iloc[-2]
     (observation, reward, done, info) = mkt.step(-0.1)
     assert mkt.bids == {.1: .9}
     assert mkt.position == .9
